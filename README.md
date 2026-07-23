@@ -35,16 +35,17 @@ isn't available for your model (yet) — pick the most recent release that inclu
 
 ## First-time installation
 
-On a fresh **Raspberry Pi OS Lite** (no desktop), one command does everything —
-runtime dependencies, the release package for your architecture, and the systemd
-services:
+Starting point: a fresh **Raspberry Pi OS Lite** image (no desktop) that you reach
+over SSH. One command does everything — runtime dependencies, the release package for
+your architecture, and the systemd services (the client runs under your login user):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/torben-erz/glassin/master/install.sh | sudo bash
 ```
 
-Then open **`http://<hostname>.local/`** (default hostname `glassout-<serial-suffix>`),
-set the GlassOut engine host/port and choose a panel or template. Until the client
+Then open **`http://<pi-hostname>.local/`** in a browser — use the same hostname you
+SSH to (a fresh image keeps its imaged name; you can rename it on the config page).
+Set the GlassOut engine host/port and choose a panel or template. Until the client
 connects and a flight is active, the screen shows **BOOTING**.
 
 > Optional wireless onboarding: an access-point setup mode (`glassout-ap-autostart`,
@@ -73,8 +74,9 @@ sudo mkdir -p /opt/glassout /etc/glassout
 sudo cp -a payload/.         /opt/glassout/
 sudo cp -a systemd/*.service /etc/systemd/system/
 
-# 4) Device access (framebuffer/DRM + input), then re-login
-sudo usermod -aG video,render,input "$USER"
+# 4) Run the client under your user + device access (framebuffer/DRM + input)
+sudo sed -i "s/^User=.*/User=$USER/" /etc/systemd/system/glassout-pi.service
+sudo usermod -aG video,render,input "$USER"   # then log out and back in
 
 # 5) Enable + start the services
 sudo systemctl daemon-reload

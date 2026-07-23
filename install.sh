@@ -41,6 +41,14 @@ curl -fLO "$BASE/$ASSET.sha256" \
 echo "-> Prüfsumme verifizieren …"
 sha256sum -c "$ASSET.sha256"
 
+# Ziel-User = der tatsächlich anmeldende Benutzer. Moderne Pi-Images haben keinen
+# festen „pi"-User mehr, daher NICHT die Unit-Vorgabe verwenden, sondern den
+# aufrufenden Login-User (bei `sudo` via $SUDO_USER).
+TARGET_USER="${SUDO_USER:-}"
+[ -n "$TARGET_USER" ] || TARGET_USER="$(logname 2>/dev/null || true)"
+[ -n "$TARGET_USER" ] || TARGET_USER="$(id -un)"
+echo "-> Dienst-Benutzer: $TARGET_USER"
+
 # 3) Entpacken + installieren (payload/ → /opt/glassout, Units → systemd)
 tar xzf "$ASSET"
 [ -d payload ] || { echo "FEHLER: Paket hat ein unerwartetes Format."; exit 1; }
@@ -48,11 +56,11 @@ mkdir -p "$OPT" "$ETC"
 cp -a payload/.         "$OPT/"
 cp -a systemd/*.service /etc/systemd/system/
 
-# 4) Geräte-Zugriff (Framebuffer/DRM + Eingabe) für den Service-User
-SVC_USER="$(sed -n 's/^User=//p' /etc/systemd/system/glassout-pi.service | head -1)"
-[ -n "$SVC_USER" ] || SVC_USER="pi"
-if id "$SVC_USER" >/dev/null 2>&1; then
-  usermod -aG video,render,input "$SVC_USER"
+# 4) Client-Dienst unter dem tatsächlichen User laufen lassen (Image-User kann
+#    abweichen) + Geräte-Zugriff (Framebuffer/DRM + Eingabe) gewähren.
+sed -i "s/^User=.*/User=$TARGET_USER/" /etc/systemd/system/glassout-pi.service
+if id "$TARGET_USER" >/dev/null 2>&1; then
+  usermod -aG video,render,input "$TARGET_USER"
 fi
 
 # 5) Dienste aktivieren + starten
@@ -64,5 +72,5 @@ systemctl enable --now glassout-pi.service
 HOST="$(hostname)"
 echo
 echo "Fertig ✔  Konfiguration im Browser:  http://$HOST.local/"
-echo "Hinweis: Der Service-User '$SVC_USER' braucht ggf. ein erneutes Login,"
+echo "Hinweis: Der Service-User '$TARGET_USER' braucht ggf. ein erneutes Login,"
 echo "         damit die neuen Gruppen (video/render/input) greifen."
