@@ -56,6 +56,21 @@ mkdir -p "$OPT" "$ETC"
 cp -a payload/.         "$OPT/"
 cp -a systemd/*.service /etc/systemd/system/
 
+# Standard-Konfig anlegen, falls keine existiert. Ohne panel.conf beendet sich der
+# Client mit „Konfig-Datei nicht lesbar" und startet endlos neu. Unkonfiguriert
+# (kein Host) → der Client zeigt „Keine Konfiguration"; eingerichtet wird im Browser.
+if [ ! -f "$ETC/panel.conf" ]; then
+  cat > "$ETC/panel.conf" <<'CONF'
+# GlassOut Pi-Panel — Werkseinstellungen (unkonfiguriert)
+port = 8787
+fps = 20
+type = viewer
+scale = 1
+rotate = 0
+language = en
+CONF
+fi
+
 # 4) Client-Dienst unter dem tatsächlichen User laufen lassen (Image-User kann
 #    abweichen) + Geräte-Zugriff (Framebuffer/DRM + Eingabe) gewähren.
 sed -i "s/^User=.*/User=$TARGET_USER/" /etc/systemd/system/glassout-pi.service
@@ -84,6 +99,9 @@ if [ -f "$CFG" ] && ! grep -q '^disable_splash=1' "$CFG"; then
   cp -n "$CFG" "$CFG.glassin.bak" 2>/dev/null || true
   printf '\n# GlassIn: kein Farb-Splash beim Boot\ndisable_splash=1\n' >> "$CFG"
 fi
+# Konsolen-Login auf dem sichtbaren tty1 ausblenden (reine Appliance; SSH bleibt).
+systemctl stop getty@tty1.service 2>/dev/null || true
+systemctl mask getty@tty1.service >/dev/null 2>&1 || true
 
 # 6) Dienste aktivieren + starten
 echo "-> Dienste aktivieren …"

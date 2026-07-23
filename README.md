@@ -38,7 +38,8 @@ isn't available for your model (yet) — pick the most recent release that inclu
 Starting point: a fresh **Raspberry Pi OS Lite** image (no desktop) that you reach
 over SSH. One command does everything — runtime dependencies, the release package for
 your architecture, the systemd services (the client runs under your login user), and a
-clean appliance boot (no boot messages, no rainbow splash or logos, no console cursor):
+clean appliance boot (no boot messages, no rainbow splash or logos, no console cursor,
+no login prompt):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/torben-erz/glassin/master/install.sh | sudo bash
@@ -76,6 +77,8 @@ tar xzf glassin-$ARCH.tar.gz
 sudo mkdir -p /opt/glassout /etc/glassout
 sudo cp -a payload/.         /opt/glassout/
 sudo cp -a systemd/*.service /etc/systemd/system/
+# default config so the client starts (unconfigured -> "No configuration")
+[ -f /etc/glassout/panel.conf ] || printf 'port = 8787\nfps = 20\ntype = viewer\nscale = 1\nrotate = 0\nlanguage = en\n' | sudo tee /etc/glassout/panel.conf >/dev/null
 
 # 4) Run the client under your user + device access (framebuffer/DRM + input)
 sudo sed -i "s/^User=.*/User=$USER/" /etc/systemd/system/glassout-pi.service
@@ -91,6 +94,8 @@ sudo systemctl enable --now glassout-pi.service
 sudo sed -i 's/console=tty1/console=tty3/; s/$/ quiet loglevel=3 logo.nologo vt.global_cursor_default=0/' /boot/firmware/cmdline.txt
 #    config.txt: no rainbow splash
 echo 'disable_splash=1' | sudo tee -a /boot/firmware/config.txt
+#    hide the console login on the visible tty1 (SSH stays available)
+sudo systemctl mask getty@tty1.service
 sudo reboot   # apply the boot settings
 ```
 </details>
