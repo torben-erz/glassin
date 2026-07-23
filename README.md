@@ -130,6 +130,7 @@ sudo systemctl restart glassout-pi.service glassout-provisioning.service
 
 | Version | Date       | Architectures | Notes |
 |---------|------------|---------------|-------|
+| v1.0.3  | 2026-07-23 | `armv6l`      | Startup: display init (KMSDRM) retries during cold boot instead of restart-looping. |
 | v1.0.2  | 2026-07-23 | `armv6l`      | Robustness: no crash-loop on missing config; installer seeds a default config and hides the console login. |
 | v1.0.1  | 2026-07-23 | `armv6l`      | First release published via the update mechanism. |
 
