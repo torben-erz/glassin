@@ -1,61 +1,62 @@
 # GlassIn
 
-Nativer Raspberry-Pi-Client für **GlassOut**-Panel-Streams: verbindet sich per
-WebSocket mit der GlassOut-Engine, dekodiert die Panel-JPEGs und zeigt sie vollbild
-an (Einzelpanel oder Template-Layout), inklusive Touch-Rückkanal. Läuft als Appliance
-auf Raspberry Pi OS Lite (ohne Desktop, Ausgabe direkt via KMSDRM).
+Native Raspberry Pi client for **[GlassOut](https://glassout.flyingart.dev/)** panel
+streams: connects to the GlassOut engine over WebSocket, decodes the panel JPEGs and
+shows them fullscreen (single panel or template layout), including touch input. Runs
+as an appliance on Raspberry Pi OS Lite (no desktop, output straight to the framebuffer
+via KMSDRM).
 
-> Dieses Repository stellt die **Releases** (fertige Pakete) bereit. Das Gerät kann
-> sich über seine Konfigurationsseite (Karte **Software**) selbst aktualisieren und
-> lädt dabei automatisch das zu seiner Architektur passende Paket.
+GlassOut (the engine that produces the panel streams): <https://glassout.flyingart.dev/>
 
-## Welches Paket brauche ich?
+> This repository hosts the **releases** (prebuilt packages). Devices update themselves
+> from their configuration page (**Software** card) and automatically download the
+> package that matches their architecture.
 
-Der Updater auf dem Gerät wählt das passende Asset **automatisch** anhand von
-`uname -m`. Für die manuelle Installation gilt folgende Zuordnung — das Asset muss
-**exakt** den `uname -m`-Wert des Geräts enthalten:
+## Which package do I need?
 
-| `uname -m` | typische Modelle | Asset |
+The on-device updater picks the right asset **automatically** based on `uname -m`.
+For manual installation the asset must contain **exactly** the device's `uname -m` value:
+
+| `uname -m` | typical models | Asset |
 |---|---|---|
 | `armv6l`  | Pi Zero, Pi Zero W, Pi 1 (32-bit OS) | `glassin-armv6l.tar.gz` |
 | `armv7l`  | Pi 2 / 3 / Zero 2 W (32-bit OS)       | `glassin-armv7l.tar.gz` |
 | `aarch64` | Pi Zero 2 W / 3 / 4 / 5 (64-bit OS)   | `glassin-aarch64.tar.gz` |
 
-Architektur auf dem Pi prüfen:
+Check the architecture on the Pi:
 
 ```bash
 uname -m
 ```
 
-**Hinweis:** Ein Release enthält nur die Assets, die dafür gebaut wurden (die Pakete
-werden auf einem Pi der jeweiligen Architektur erzeugt). Fehlt dein Asset in einem
-Release, ist dieses Release für dein Modell (noch) nicht verfügbar — dann das jüngste
-Release wählen, das dein Asset enthält.
+**Note:** a release only contains the assets it was built for (packages are built on a
+Pi of the matching architecture). If your asset is missing from a release, that release
+isn't available for your model (yet) — pick the most recent release that includes it.
 
-## Aktualisieren
+## Updating
 
-**Automatisch (empfohlen):** Konfigurationsseite des Geräts öffnen
-(`http://<hostname>.local/`) → Karte **Software** → *Auf Updates prüfen* →
-*Installieren*. Das Gerät lädt das passende Paket, verifiziert die SHA256-Summe,
-sichert die laufende Version, spielt das Update ein und startet neu; kommt der Client
-danach nicht hoch, wird automatisch auf die vorige Version zurückgerollt.
+**Automatic (recommended):** open the device's configuration page
+(`http://<hostname>.local/`) → **Software** card → *Check for updates* → *Install*.
+The device downloads the matching package, verifies its SHA256 checksum, backs up the
+running version, installs the update and restarts; if the client fails to come up, it
+automatically rolls back to the previous version.
 
-**Manuell:** Passendes `glassin-<arch>.tar.gz` und die zugehörige `.sha256` laden,
-Prüfsumme verifizieren, entpacken und einspielen:
+**Manual:** download the matching `glassin-<arch>.tar.gz` and its `.sha256`, verify the
+checksum, extract and install:
 
 ```bash
 sha256sum -c glassin-<arch>.tar.gz.sha256
-tar xzf glassin-<arch>.tar.gz          # enthält payload/ und systemd/
+tar xzf glassin-<arch>.tar.gz          # contains payload/ and systemd/
 sudo cp -a payload/.         /opt/glassout/
 sudo cp -a systemd/*.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl restart glassout-pi.service glassout-provisioning.service
 ```
 
-## Versionshistorie
+## Version history
 
-| Version | Datum      | Architekturen | Anmerkungen |
-|---------|------------|---------------|-------------|
-| v1.0.1  | 2026-07-23 | `armv6l`      | Erstes über den Update-Mechanismus veröffentlichtes Release. |
+| Version | Date       | Architectures | Notes |
+|---------|------------|---------------|-------|
+| v1.0.1  | 2026-07-23 | `armv6l`      | First release published via the update mechanism. |
 
-Details zu jeder Version stehen in den jeweiligen [Release-Notes](../../releases).
+See each release's [notes](../../releases) for details.
