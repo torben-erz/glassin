@@ -99,9 +99,15 @@ if [ -f "$CFG" ] && ! grep -q '^disable_splash=1' "$CFG"; then
   cp -n "$CFG" "$CFG.glassin.bak" 2>/dev/null || true
   printf '\n# GlassIn: kein Farb-Splash beim Boot\ndisable_splash=1\n' >> "$CFG"
 fi
-# Konsolen-Login auf dem sichtbaren tty1 ausblenden (reine Appliance; SSH bleibt).
-systemctl stop getty@tty1.service 2>/dev/null || true
-systemctl mask getty@tty1.service >/dev/null 2>&1 || true
+# Konsolen-Login auf tty1 per AUTOLOGIN entschärfen: kein „login:"-Prompt, aber die
+# Sitzung bleibt bestehen — die der SDL-KMSDRM-Client für den Display-Zugriff braucht.
+# (getty@tty1 NICHT maskieren — das nimmt dem Client das Display: „kmsdrm not available".)
+mkdir -p /etc/systemd/system/getty@tty1.service.d
+cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf <<CONF
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin $TARGET_USER --noclear %I \$TERM
+CONF
 
 # 6) Dienste aktivieren + starten
 echo "-> Dienste aktivieren …"

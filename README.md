@@ -94,8 +94,14 @@ sudo systemctl enable --now glassout-pi.service
 sudo sed -i 's/console=tty1/console=tty3/; s/$/ quiet loglevel=3 logo.nologo vt.global_cursor_default=0/' /boot/firmware/cmdline.txt
 #    config.txt: no rainbow splash
 echo 'disable_splash=1' | sudo tee -a /boot/firmware/config.txt
-#    hide the console login on the visible tty1 (SSH stays available)
-sudo systemctl mask getty@tty1.service
+#    console autologin on tty1: no login prompt, but keeps the session the
+#    KMSDRM client needs (do NOT mask getty@tty1 — that breaks the display)
+sudo mkdir -p /etc/systemd/system/getty@tty1.service.d
+sudo tee /etc/systemd/system/getty@tty1.service.d/autologin.conf >/dev/null <<EOF
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin $USER --noclear %I \$TERM
+EOF
 sudo reboot   # apply the boot settings
 ```
 </details>
