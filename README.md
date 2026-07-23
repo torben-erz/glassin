@@ -33,6 +33,61 @@ uname -m
 Pi of the matching architecture). If your asset is missing from a release, that release
 isn't available for your model (yet) — pick the most recent release that includes it.
 
+## First-time installation
+
+For a fresh **Raspberry Pi OS Lite** (no desktop). The client renders straight to the
+framebuffer via KMSDRM; everything else is configured from the browser.
+
+1. **Install the runtime dependencies** (this set also covers building from source):
+
+   ```bash
+   sudo apt update
+   sudo apt install -y libwebsockets-dev libturbojpeg0-dev libsdl2-dev \
+       libsdl2-ttf-dev libcjson-dev fonts-dejavu-core
+   ```
+
+2. **Download and verify** the package for your architecture (see the table above):
+
+   ```bash
+   ARCH=$(uname -m)
+   BASE=https://github.com/torben-erz/glassin/releases/latest/download
+   curl -LO $BASE/glassin-$ARCH.tar.gz
+   curl -LO $BASE/glassin-$ARCH.tar.gz.sha256
+   sha256sum -c glassin-$ARCH.tar.gz.sha256
+   ```
+
+3. **Install** it (`payload/` → `/opt/glassout`, units → systemd):
+
+   ```bash
+   tar xzf glassin-$ARCH.tar.gz
+   sudo mkdir -p /opt/glassout /etc/glassout
+   sudo cp -a payload/.         /opt/glassout/
+   sudo cp -a systemd/*.service /etc/systemd/system/
+   ```
+
+4. **Grant device access** (framebuffer/DRM + input), then log out and back in:
+
+   ```bash
+   sudo usermod -aG video,render,input "$USER"
+   ```
+
+5. **Enable and start** the services:
+
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now glassout-provisioning.service
+   sudo systemctl enable --now glassout-pi.service
+   ```
+
+6. **Configure** in the browser: open `http://<hostname>.local/` (default hostname
+   `glassout-<serial-suffix>`). Set the GlassOut engine host/port and choose a panel or
+   template. Until the client connects and a flight is active, the screen shows
+   **BOOTING**.
+
+> Optional wireless onboarding: an access-point setup mode (`glassout-ap-autostart`,
+> `ap_mode.sh`) is included, but additionally needs `dnsmasq-base` and a NetworkManager
+> captive-DNS config. For a wired or pre-configured Wi-Fi connection it is not required.
+
 ## Updating
 
 **Automatic (recommended):** open the device's configuration page
