@@ -61,7 +61,7 @@ cp -a systemd/*.service /etc/systemd/system/
 # (kein Host) → der Client zeigt „Keine Konfiguration"; eingerichtet wird im Browser.
 if [ ! -f "$ETC/panel.conf" ]; then
   cat > "$ETC/panel.conf" <<'CONF'
-# GlassOut Pi-Panel — Werkseinstellungen (unkonfiguriert)
+# GlassIn Pi-Panel — Werkseinstellungen (unkonfiguriert)
 port = 8787
 fps = 20
 type = viewer
