@@ -63,7 +63,29 @@ if id "$TARGET_USER" >/dev/null 2>&1; then
   usermod -aG video,render,input "$TARGET_USER"
 fi
 
-# 5) Dienste aktivieren + starten
+# 5) Sauberer Appliance-Boot: keine Kernel-/Boot-Meldungen und kein Logo auf dem
+#    sichtbaren Schirm, kein Farb-Splash, kein blinkender Konsolen-Cursor. (Den
+#    Maus-/Touch-Zeiger blendet der SDL-Client im Vollbild ohnehin aus.) Idempotent,
+#    mit Backup; greift nach einem Reboot.
+echo "-> Boot für Appliance-Betrieb anpassen …"
+BOOT=/boot/firmware; [ -d "$BOOT" ] || BOOT=/boot
+CMD="$BOOT/cmdline.txt"; CFG="$BOOT/config.txt"
+if [ -f "$CMD" ]; then
+  cp -n "$CMD" "$CMD.glassin.bak" 2>/dev/null || true
+  line="$(tr -d '\n' < "$CMD")"
+  line="${line/console=tty1/console=tty3}"   # Boot-Text weg von der sichtbaren Konsole
+  for kv in quiet loglevel=3 logo.nologo vt.global_cursor_default=0; do
+    key="${kv%%=*}"
+    case " $line " in *" $key"[\ =]*) : ;; *) line="$line $kv" ;; esac
+  done
+  echo "$line" > "$CMD"
+fi
+if [ -f "$CFG" ] && ! grep -q '^disable_splash=1' "$CFG"; then
+  cp -n "$CFG" "$CFG.glassin.bak" 2>/dev/null || true
+  printf '\n# GlassIn: kein Farb-Splash beim Boot\ndisable_splash=1\n' >> "$CFG"
+fi
+
+# 6) Dienste aktivieren + starten
 echo "-> Dienste aktivieren …"
 systemctl daemon-reload
 systemctl enable --now glassout-provisioning.service
@@ -74,3 +96,4 @@ echo
 echo "Fertig ✔  Konfiguration im Browser:  http://$HOST.local/"
 echo "Hinweis: Der Service-User '$TARGET_USER' braucht ggf. ein erneutes Login,"
 echo "         damit die neuen Gruppen (video/render/input) greifen."
+echo "Hinweis: Für den sauberen Boot (ohne Logs/Logo/Cursor) einmal neu starten:  sudo reboot"

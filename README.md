@@ -37,11 +37,14 @@ isn't available for your model (yet) — pick the most recent release that inclu
 
 Starting point: a fresh **Raspberry Pi OS Lite** image (no desktop) that you reach
 over SSH. One command does everything — runtime dependencies, the release package for
-your architecture, and the systemd services (the client runs under your login user):
+your architecture, the systemd services (the client runs under your login user), and a
+clean appliance boot (no boot messages, no rainbow splash or logos, no console cursor):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/torben-erz/glassin/master/install.sh | sudo bash
 ```
+
+**Reboot once** afterwards so the clean-boot settings take effect (`sudo reboot`).
 
 Then open **`http://<pi-hostname>.local/`** in a browser — use the same hostname you
 SSH to (a fresh image keeps its imaged name; you can rename it on the config page).
@@ -82,6 +85,13 @@ sudo usermod -aG video,render,input "$USER"   # then log out and back in
 sudo systemctl daemon-reload
 sudo systemctl enable --now glassout-provisioning.service
 sudo systemctl enable --now glassout-pi.service
+
+# 6) Clean appliance boot (edit /boot/firmware/, older images: /boot/)
+#    cmdline.txt (single line): send console off tty1 + quiet + hide logo/cursor
+sudo sed -i 's/console=tty1/console=tty3/; s/$/ quiet loglevel=3 logo.nologo vt.global_cursor_default=0/' /boot/firmware/cmdline.txt
+#    config.txt: no rainbow splash
+echo 'disable_splash=1' | sudo tee -a /boot/firmware/config.txt
+sudo reboot   # apply the boot settings
 ```
 </details>
 
