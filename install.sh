@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
-# GlassIn — Ein-Kommando-Installer für Raspberry Pi OS Lite.
+# GlassIn — one-command installer for Raspberry Pi OS Lite.
 #
 #   curl -fsSL https://raw.githubusercontent.com/torben-erz/glassin/master/install.sh | sudo bash
 #
-# Installiert die Laufzeit-Abhängigkeiten, lädt das zur Architektur passende
-# neueste Release, prüft die SHA256-Summe, installiert nach /opt/glassout +
-# systemd und startet die Dienste. Danach: http://<hostname>.local/ konfigurieren.
+# Installs the runtime dependencies, downloads the latest release matching this
+# architecture, verifies the SHA256 checksum, installs into /opt/glassout + systemd
+# and starts the services. Afterwards configure at http://<hostname>.local/.
 set -euo pipefail
 
 REPO="torben-erz/glassin"
@@ -14,7 +14,7 @@ OPT="/opt/glassout"
 ETC="/etc/glassout"
 
 if [ "$(id -u)" -ne 0 ]; then
-  echo "Bitte als root ausführen, z. B.:"
+  echo "Please run as root, e.g.:"
   echo "  curl -fsSL https://raw.githubusercontent.com/$REPO/master/install.sh | sudo bash"
   exit 1
 fi
@@ -22,46 +22,46 @@ fi
 ARCH="$(uname -m)"
 ASSET="glassin-$ARCH.tar.gz"
 BASE="https://github.com/$REPO/releases/latest/download"
-echo "== GlassIn-Installer ($ARCH) =="
+echo "== GlassIn installer ($ARCH) =="
 
-# 1) Laufzeit-Abhängigkeiten
-echo "-> Abhängigkeiten installieren …"
+# 1) Runtime dependencies
+echo "-> Installing dependencies …"
 apt-get update
 apt-get install -y libwebsockets-dev libturbojpeg0-dev libsdl2-dev \
   libsdl2-ttf-dev libcjson-dev fonts-dejavu-core curl ca-certificates
 
-# 2) Neuestes Release-Paket laden + verifizieren
+# 2) Download + verify the latest release package
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 cd "$TMP"
-echo "-> Lade $ASSET aus dem neuesten Release …"
+echo "-> Downloading $ASSET from the latest release …"
 curl -fLO "$BASE/$ASSET" \
-  || { echo "FEHLER: Kein Paket für Architektur '$ARCH' im neuesten Release gefunden."; exit 1; }
+  || { echo "ERROR: no package for architecture '$ARCH' in the latest release."; exit 1; }
 curl -fLO "$BASE/$ASSET.sha256" \
-  || { echo "FEHLER: Prüfsummen-Datei fehlt im Release."; exit 1; }
-echo "-> Prüfsumme verifizieren …"
+  || { echo "ERROR: checksum file missing in the release."; exit 1; }
+echo "-> Verifying checksum …"
 sha256sum -c "$ASSET.sha256"
 
-# Ziel-User = der tatsächlich anmeldende Benutzer. Moderne Pi-Images haben keinen
-# festen „pi"-User mehr, daher NICHT die Unit-Vorgabe verwenden, sondern den
-# aufrufenden Login-User (bei `sudo` via $SUDO_USER).
+# Target user = the actual login user. Modern Pi images no longer have a fixed
+# "pi" user, so don't use the unit's default — use the invoking login user
+# (via $SUDO_USER when run through `sudo`).
 TARGET_USER="${SUDO_USER:-}"
 [ -n "$TARGET_USER" ] || TARGET_USER="$(logname 2>/dev/null || true)"
 [ -n "$TARGET_USER" ] || TARGET_USER="$(id -un)"
-echo "-> Dienst-Benutzer: $TARGET_USER"
+echo "-> Service user: $TARGET_USER"
 
-# 3) Entpacken + installieren (payload/ → /opt/glassout, Units → systemd)
+# 3) Unpack + install (payload/ -> /opt/glassout, units -> systemd)
 tar xzf "$ASSET"
-[ -d payload ] || { echo "FEHLER: Paket hat ein unerwartetes Format."; exit 1; }
+[ -d payload ] || { echo "ERROR: package has an unexpected format."; exit 1; }
 mkdir -p "$OPT" "$ETC"
 cp -a payload/.         "$OPT/"
 cp -a systemd/*.service /etc/systemd/system/
 
-# Standard-Konfig anlegen, falls keine existiert. Ohne panel.conf beendet sich der
-# Client mit „Konfig-Datei nicht lesbar" und startet endlos neu. Unkonfiguriert
-# (kein Host) → der Client zeigt „Keine Konfiguration"; eingerichtet wird im Browser.
+# Create a default config if none exists. Without panel.conf the client exits with
+# "config file not readable" and restart-loops. Unconfigured (no host) -> the client
+# shows "No configuration"; it is set up from the browser.
 if [ ! -f "$ETC/panel.conf" ]; then
   cat > "$ETC/panel.conf" <<'CONF'
-# GlassIn Pi-Panel — Werkseinstellungen (unkonfiguriert)
+# GlassIn Pi panel — factory defaults (unconfigured)
 port = 8787
 fps = 20
 type = viewer
@@ -71,24 +71,24 @@ language = en
 CONF
 fi
 
-# 4) Client-Dienst unter dem tatsächlichen User laufen lassen (Image-User kann
-#    abweichen) + Geräte-Zugriff (Framebuffer/DRM + Eingabe) gewähren.
+# 4) Run the client service as the actual user (image user may differ) and grant
+#    device access (framebuffer/DRM + input).
 sed -i "s/^User=.*/User=$TARGET_USER/" /etc/systemd/system/glassout-pi.service
 if id "$TARGET_USER" >/dev/null 2>&1; then
   usermod -aG video,render,input "$TARGET_USER"
 fi
 
-# 5) Sauberer Appliance-Boot: keine Kernel-/Boot-Meldungen und kein Logo auf dem
-#    sichtbaren Schirm, kein Farb-Splash, kein blinkender Konsolen-Cursor. (Den
-#    Maus-/Touch-Zeiger blendet der SDL-Client im Vollbild ohnehin aus.) Idempotent,
-#    mit Backup; greift nach einem Reboot.
-echo "-> Boot für Appliance-Betrieb anpassen …"
+# 5) Clean appliance boot: no kernel/boot messages or logo on the visible screen,
+#    no colour splash, no blinking console cursor. (The SDL client hides the mouse/
+#    touch cursor in fullscreen anyway.) Idempotent, with a backup; takes effect
+#    after a reboot.
+echo "-> Configuring boot for appliance use …"
 BOOT=/boot/firmware; [ -d "$BOOT" ] || BOOT=/boot
 CMD="$BOOT/cmdline.txt"; CFG="$BOOT/config.txt"
 if [ -f "$CMD" ]; then
   cp -n "$CMD" "$CMD.glassin.bak" 2>/dev/null || true
   line="$(tr -d '\n' < "$CMD")"
-  line="${line/console=tty1/console=tty3}"   # Boot-Text weg von der sichtbaren Konsole
+  line="${line/console=tty1/console=tty3}"   # move boot text off the visible console
   for kv in quiet loglevel=3 logo.nologo vt.global_cursor_default=0; do
     key="${kv%%=*}"
     case " $line " in *" $key"[\ =]*) : ;; *) line="$line $kv" ;; esac
@@ -97,11 +97,11 @@ if [ -f "$CMD" ]; then
 fi
 if [ -f "$CFG" ] && ! grep -q '^disable_splash=1' "$CFG"; then
   cp -n "$CFG" "$CFG.glassin.bak" 2>/dev/null || true
-  printf '\n# GlassIn: kein Farb-Splash beim Boot\ndisable_splash=1\n' >> "$CFG"
+  printf '\n# GlassIn: no colour splash at boot\ndisable_splash=1\n' >> "$CFG"
 fi
-# Konsolen-Login auf tty1 per AUTOLOGIN entschärfen: kein „login:"-Prompt, aber die
-# Sitzung bleibt bestehen — die der SDL-KMSDRM-Client für den Display-Zugriff braucht.
-# (getty@tty1 NICHT maskieren — das nimmt dem Client das Display: „kmsdrm not available".)
+# Defuse the console login on tty1 via AUTOLOGIN: no "login:" prompt, but the session
+# stays — the SDL/KMSDRM client needs it for display access.
+# (Do NOT mask getty@tty1 — that takes the display away: "kmsdrm not available".)
 mkdir -p /etc/systemd/system/getty@tty1.service.d
 cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf <<CONF
 [Service]
@@ -109,15 +109,15 @@ ExecStart=
 ExecStart=-/sbin/agetty --autologin $TARGET_USER --noclear %I \$TERM
 CONF
 
-# 6) Dienste aktivieren + starten
-echo "-> Dienste aktivieren …"
+# 6) Enable + start the services
+echo "-> Enabling services …"
 systemctl daemon-reload
 systemctl enable --now glassout-provisioning.service
 systemctl enable --now glassout-pi.service
 
 HOST="$(hostname)"
 echo
-echo "Fertig ✔  Konfiguration im Browser:  http://$HOST.local/"
-echo "Hinweis: Der Service-User '$TARGET_USER' braucht ggf. ein erneutes Login,"
-echo "         damit die neuen Gruppen (video/render/input) greifen."
-echo "Hinweis: Für den sauberen Boot (ohne Logs/Logo/Cursor) einmal neu starten:  sudo reboot"
+echo "Done ✔  Configure in your browser:  http://$HOST.local/"
+echo "Note: the service user '$TARGET_USER' may need to log in again"
+echo "      for the new groups (video/render/input) to take effect."
+echo "Note: for the clean boot (no logs/logo/cursor) reboot once:  sudo reboot"
