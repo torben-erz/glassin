@@ -33,6 +33,32 @@ uname -m
 Pi of the matching architecture). If your asset is missing from a release, that release
 isn't available for your model (yet) — pick the most recent release that includes it.
 
+## Supported displays
+
+The client renders through **SDL2 with the KMSDRM backend** — it drives any screen that
+the Pi exposes as a **DRM/KMS** output. That covers more than just HDMI:
+
+| Connection | Supported | Notes |
+|---|---|---|
+| **HDMI** | ✅ | The default. Fullscreen, one panel/template. |
+| **DSI** (ribbon cable, e.g. the official 7″ touch display) | ✅ | Works fully, **including touch** (touch comes through as input events). |
+| **DPI** (parallel display via GPIO, enabled in the device tree) | ✅ | Appears as a DRM connector. |
+| **Composite / TV-out** | ✅ | Appears as a DRM connector. |
+| **SPI mini-TFTs** (`fbtft`, e.g. `/dev/fb1`) | ⚠️ Only with a DRM driver | Classic SPI framebuffer panels are **not** driven by KMSDRM. They work only if the panel has a real `tinydrm`/DRM kernel driver. |
+| **USB displays** (DisplayLink) | ❌ | Needs extra `evdi`/`udl` drivers; not reliable for an appliance. |
+
+**One display, one stream.** The client shows a single panel or template stream and does
+not composite two independent streams onto two screens — that keeps it light enough for a
+Pi Zero (see *Multiple outputs* below).
+
+### Multiple outputs (Pi 4 / Pi 5)
+
+A Pi with **more than one connected display** (typically a Pi 4/5 with two HDMI outputs, or
+HDMI + DSI) shows a **monitor selector** on the configuration page. Pick which output the
+panel is shown on; the field only appears when at least two outputs are detected, so a Pi
+Zero (single output) never sees it. This selects *which* output to use — it does not stream
+to both at once.
+
 ## First-time installation
 
 Starting point: a fresh **Raspberry Pi OS Lite** image (no desktop) that you reach
@@ -169,6 +195,7 @@ sudo systemctl restart glassout-pi.service glassout-provisioning.service
 
 | Version | Date       | Architectures | Notes |
 |---------|------------|---------------|-------|
+| v1.0.8  | 2026-07-24 | `armv6l`      | Multiple-output support: on a Pi with more than one connected display, the config page shows a monitor selector to pick which output shows the panel. |
 | v1.0.7  | 2026-07-24 | `armv6l`      | GPIO reset button: hold GPIO 21 (pin 40) 5 s to forget Wi-Fi and start the setup AP. |
 | v1.0.6  | 2026-07-24 | `armv6l`      | AP-mode onboarding (installer sets up the setup hotspot; device name on the AP page); provisioning service fully English. |
 | v1.0.5  | 2026-07-23 | `armv6l`      | Config UI: graceful self-update — waits for the service to come back before reloading (no transient "Load failed"). |
