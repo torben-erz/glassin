@@ -52,18 +52,18 @@ SSH to (a fresh image keeps its imaged name; you can rename it on the config pag
 Set the GlassOut engine host/port and choose a panel or template. Until the client
 connects and a flight is active, the screen shows **BOOTING**.
 
-> Optional wireless onboarding: an access-point setup mode (`glassout-ap-autostart`,
-> `ap_mode.sh`) is included, but additionally needs `dnsmasq-base` and a NetworkManager
-> captive-DNS config. For a wired or pre-configured Wi-Fi connection it is not required.
+The installer also enables **AP-mode onboarding** — see [Wi-Fi setup via the access point](#wi-fi-setup-via-the-access-point-ap-mode)
+below. You still need a network for this first install (Ethernet, or Wi-Fi set in Raspberry Pi
+Imager) so the installer can run over SSH.
 
 <details>
 <summary>What the script does (equivalent manual steps)</summary>
 
 ```bash
-# 1) Runtime dependencies
+# 1) Runtime dependencies (dnsmasq-base = DHCP/DNS for the setup AP)
 sudo apt update
 sudo apt install -y libwebsockets-dev libturbojpeg0-dev libsdl2-dev \
-    libsdl2-ttf-dev libcjson-dev fonts-dejavu-core
+    libsdl2-ttf-dev libcjson-dev fonts-dejavu-core dnsmasq-base
 
 # 2) Download + verify the package for this architecture
 ARCH=$(uname -m)
@@ -102,9 +102,36 @@ sudo tee /etc/systemd/system/getty@tty1.service.d/autologin.conf >/dev/null <<EO
 ExecStart=
 ExecStart=-/sbin/agetty --autologin $USER --noclear %I \$TERM
 EOF
+
+# 7) AP onboarding (starts a setup hotspot only when there is no network at boot)
+sudo mkdir -p /etc/NetworkManager/dnsmasq-shared.d
+sudo cp /opt/glassout/dnsmasq-shared.d/glassout-captive.conf /etc/NetworkManager/dnsmasq-shared.d/
+sudo chmod +x /opt/glassout/ap_mode.sh
+sudo systemctl enable glassout-ap-autostart.service
+
 sudo reboot   # apply the boot settings
 ```
 </details>
+
+## Wi-Fi setup via the access point (AP mode)
+
+If the device boots **without a network connection** — no Ethernet and no known Wi-Fi —
+it automatically starts an open setup hotspot so you can configure Wi-Fi from a phone or
+laptop. While it is connected (Ethernet or a known Wi-Fi), the hotspot never starts.
+
+1. Power on the Pi with no cable and no known Wi-Fi in range. After ~40 s it brings up the
+   hotspot **`GlassIn-<serial-suffix>`** (open, no password).
+2. Connect a phone or laptop to that hotspot. The setup page opens automatically (captive
+   portal); if not, browse to **`http://10.42.0.1/`**.
+3. Choose your Wi-Fi network, enter the password, and optionally set a **device name**
+   (hostname). Tap **Connect**.
+4. The Pi joins your Wi-Fi and the hotspot switches off. Reconnect your phone/laptop to
+   your normal Wi-Fi and open **`http://<device-name>.local/`** (the name you set, or the
+   IP shown on the device's screen) to finish configuration.
+
+If the Wi-Fi password is wrong, the Pi automatically brings the hotspot back so you can
+retry. (The first install still needs a network so `install.sh` can run over SSH — the
+AP covers later boots without a known network.)
 
 ## Updating
 

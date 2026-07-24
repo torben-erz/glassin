@@ -28,7 +28,8 @@ echo "== GlassIn installer ($ARCH) =="
 echo "-> Installing dependencies …"
 apt-get update
 apt-get install -y libwebsockets-dev libturbojpeg0-dev libsdl2-dev \
-  libsdl2-ttf-dev libcjson-dev fonts-dejavu-core curl ca-certificates
+  libsdl2-ttf-dev libcjson-dev fonts-dejavu-core curl ca-certificates \
+  dnsmasq-base   # dnsmasq-base: DHCP/DNS for the setup access point (AP mode)
 
 # 2) Download + verify the latest release package
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
@@ -108,6 +109,16 @@ cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf <<CONF
 ExecStart=
 ExecStart=-/sbin/agetty --autologin $TARGET_USER --noclear %I \$TERM
 CONF
+
+# 5b) AP onboarding: on boot, if there is no network connection (Ethernet or Wi-Fi),
+#     bring up a setup hotspot so Wi-Fi can be configured from a phone. Gated — it
+#     never starts the AP while connected. Needs the captive-DNS config + the unit.
+[ -f "$OPT/ap_mode.sh" ] && chmod +x "$OPT/ap_mode.sh"
+if [ -f "$OPT/dnsmasq-shared.d/glassout-captive.conf" ]; then
+  mkdir -p /etc/NetworkManager/dnsmasq-shared.d
+  cp "$OPT/dnsmasq-shared.d/glassout-captive.conf" /etc/NetworkManager/dnsmasq-shared.d/
+fi
+systemctl enable glassout-ap-autostart.service >/dev/null 2>&1 || true
 
 # 6) Enable + start the services
 echo "-> Enabling services …"
