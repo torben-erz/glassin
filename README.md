@@ -195,6 +195,7 @@ sudo systemctl restart glassout-pi.service glassout-provisioning.service
 
 | Version | Date       | Architectures | Notes |
 |---------|------------|---------------|-------|
+| v1.0.9  | 2026-07-24 | `armv6l`, `armv7l`, `aarch64` | Maintenance release. Multi-arch builds are now built and published directly on the build host. No functional changes. |
 | v1.0.8  | 2026-07-24 | `armv6l`, `armv7l`, `aarch64` | Multiple-output support: on a Pi with more than one connected display, the config page shows a monitor selector to pick which output shows the panel. First release covering all three architectures. |
 | v1.0.7  | 2026-07-24 | `armv6l`      | GPIO reset button: hold GPIO 21 (pin 40) 5 s to forget Wi-Fi and start the setup AP. |
 | v1.0.6  | 2026-07-24 | `armv6l`      | AP-mode onboarding (installer sets up the setup hotspot; device name on the AP page); provisioning service fully English. |
