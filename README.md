@@ -60,10 +60,11 @@ Imager) so the installer can run over SSH.
 <summary>What the script does (equivalent manual steps)</summary>
 
 ```bash
-# 1) Runtime dependencies (dnsmasq-base = DHCP/DNS for the setup AP)
+# 1) Runtime dependencies (dnsmasq-base = setup-AP DHCP/DNS; gpiozero/lgpio = reset button)
 sudo apt update
 sudo apt install -y libwebsockets-dev libturbojpeg0-dev libsdl2-dev \
-    libsdl2-ttf-dev libcjson-dev fonts-dejavu-core dnsmasq-base
+    libsdl2-ttf-dev libcjson-dev fonts-dejavu-core dnsmasq-base \
+    python3-gpiozero python3-lgpio
 
 # 2) Download + verify the package for this architecture
 ARCH=$(uname -m)
@@ -109,6 +110,9 @@ sudo cp /opt/glassout/dnsmasq-shared.d/glassout-captive.conf /etc/NetworkManager
 sudo chmod +x /opt/glassout/ap_mode.sh
 sudo systemctl enable glassout-ap-autostart.service
 
+# 8) GPIO reset button (hold GPIO 21 / pin 40 → GND / pin 39 for 5 s)
+sudo systemctl enable --now glassout-gpio-reset.service
+
 sudo reboot   # apply the boot settings
 ```
 </details>
@@ -132,6 +136,14 @@ laptop. While it is connected (Ethernet or a known Wi-Fi), the hotspot never sta
 If the Wi-Fi password is wrong, the Pi automatically brings the hotspot back so you can
 retry. (The first install still needs a network so `install.sh` can run over SSH — the
 AP covers later boots without a known network.)
+
+## Reset button (GPIO)
+
+Optionally wire a momentary push button between **header pin 40 (GPIO 21)** and
+**pin 39 (GND)**. **Hold it for 5 seconds** to forget the saved Wi-Fi networks and bring
+up the setup access point (see above) — handy when the device was moved to a network it
+can't join and you want to reconfigure Wi-Fi from a phone. Ethernet/LAN settings are left
+untouched. The installer sets this up automatically; no button connected → nothing happens.
 
 ## Updating
 
@@ -157,6 +169,7 @@ sudo systemctl restart glassout-pi.service glassout-provisioning.service
 
 | Version | Date       | Architectures | Notes |
 |---------|------------|---------------|-------|
+| v1.0.7  | 2026-07-24 | `armv6l`      | GPIO reset button: hold GPIO 21 (pin 40) 5 s to forget Wi-Fi and start the setup AP. |
 | v1.0.6  | 2026-07-24 | `armv6l`      | AP-mode onboarding (installer sets up the setup hotspot; device name on the AP page); provisioning service fully English. |
 | v1.0.5  | 2026-07-23 | `armv6l`      | Config UI: graceful self-update — waits for the service to come back before reloading (no transient "Load failed"). |
 | v1.0.4  | 2026-07-23 | `armv6l`      | Consistent GlassIn branding in the config UI (hostname suggestion, setup hotspot name, labels). |

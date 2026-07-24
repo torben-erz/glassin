@@ -29,7 +29,8 @@ echo "-> Installing dependencies …"
 apt-get update
 apt-get install -y libwebsockets-dev libturbojpeg0-dev libsdl2-dev \
   libsdl2-ttf-dev libcjson-dev fonts-dejavu-core curl ca-certificates \
-  dnsmasq-base   # dnsmasq-base: DHCP/DNS for the setup access point (AP mode)
+  dnsmasq-base python3-gpiozero python3-lgpio
+# dnsmasq-base: DHCP/DNS for the setup AP · python3-gpiozero/lgpio: GPIO reset button
 
 # 2) Download + verify the latest release package
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
@@ -119,6 +120,10 @@ if [ -f "$OPT/dnsmasq-shared.d/glassout-captive.conf" ]; then
   cp "$OPT/dnsmasq-shared.d/glassout-captive.conf" /etc/NetworkManager/dnsmasq-shared.d/
 fi
 systemctl enable glassout-ap-autostart.service >/dev/null 2>&1 || true
+
+# 5c) GPIO reset button: hold a button (GPIO 21 / header pin 40 → GND / pin 39) for
+#     5 s to forget Wi-Fi and start the setup AP. Watcher runs as a systemd service.
+systemctl enable --now glassout-gpio-reset.service >/dev/null 2>&1 || true
 
 # 6) Enable + start the services
 echo "-> Enabling services …"
