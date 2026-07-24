@@ -157,6 +157,7 @@ sudo systemctl restart glassout-pi.service glassout-provisioning.service
 
 | Version | Date       | Architectures | Notes |
 |---------|------------|---------------|-------|
+| v1.0.6  | 2026-07-24 | `armv6l`      | AP-mode onboarding (installer sets up the setup hotspot; device name on the AP page); provisioning service fully English. |
 | v1.0.5  | 2026-07-23 | `armv6l`      | Config UI: graceful self-update — waits for the service to come back before reloading (no transient "Load failed"). |
 | v1.0.4  | 2026-07-23 | `armv6l`      | Consistent GlassIn branding in the config UI (hostname suggestion, setup hotspot name, labels). |
 | v1.0.3  | 2026-07-23 | `armv6l`      | Startup: display init (KMSDRM) retries cleanly during cold boot instead of restart-looping. |
