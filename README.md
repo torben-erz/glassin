@@ -109,7 +109,7 @@ shows the service, each monitor, the detected aircraft and the active network co
 
 | Tab | Contents |
 |---|---|
-| **Display** | Panel or template, rotation, size, position. With two monitors: one sub-tab per monitor, each with an optional name. From monitor 2 on there is **Not used** (the monitor then shows a hint with the config address). |
+| **Display** | Panel or template, rotation, size, position. With two monitors: one sub-tab per monitor (showing its port, e.g. *Monitor 1 · HDMI 0*; HDMI 0 is the port next to the USB-C power socket), each with an optional name. From monitor 2 on there is **Not used** (the monitor then shows a hint with the config address). |
 | **Network** | Wi-Fi (saved network, scan, *Test & save*) |
 | **System** | GlassOut engine (host, port, connection type, frame rate), hostname, language, *Back up / Load configuration*, *Reset to factory defaults*, **GlassOut profiles**, **Software** update |
 
@@ -169,7 +169,8 @@ and keeps the configuration.
 
 | Version | Date       | Architectures | Notes |
 |---------|------------|---------------|-------|
-| v2.0.0  | 2026-11-01 | `armv6l`, `armv7l`, `aarch64` | **Major release — 1.x devices must be moved over once (see above).** Two monitors on Pi 4/5 (own panel/template, rotation, size and name each). LAN first with Wi-Fi fallback and setup hotspot (countdown and hotspot name on screen). Wi-Fi setup with credential check. GlassOut profile backup with versions and download in the desktop app's import format. New configuration page with tabs, per-monitor status. Minimal installation and new installer (Trixie, clean appliance boot). Updater picks the package by userland architecture. Everything renamed to `glassin`. |
+| v2.0.1  | 2026-11-02 | `armv6l`, `armv7l`, `aarch64` | Configuration page shows the port of each monitor (*Monitor 1 · HDMI 0*) and explains which port is HDMI 0 (next to the USB-C power socket). |
+| v2.0.0  | 2026-11-02 | `armv6l`, `armv7l`, `aarch64` | **Major release — 1.x devices must be moved over once (see above).** Two monitors on Pi 4/5 (own panel/template, rotation, size and name each). LAN first with Wi-Fi fallback and setup hotspot (countdown and hotspot name on screen). Wi-Fi setup with credential check. GlassOut profile backup with versions and download in the desktop app's import format. New configuration page with tabs, per-monitor status. Minimal installation and new installer (Trixie, clean appliance boot). Updater picks the package by userland architecture. Everything renamed to `glassin`. |
 | v1.0.9  | 2026-07-24 | `armv6l`, `armv7l`, `aarch64` | Maintenance release. Multi-arch builds are now built and published directly on the build host. No functional changes. |
 | v1.0.8  | 2026-07-24 | `armv6l`, `armv7l`, `aarch64` | Multiple-output support: on a Pi with more than one connected display, the config page shows a monitor selector to pick which output shows the panel. First release covering all three architectures. |
 | v1.0.7  | 2026-07-24 | `armv6l`      | GPIO reset button: hold GPIO 21 (pin 40) 5 s to forget Wi-Fi and start the setup AP. |
